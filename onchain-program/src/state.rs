@@ -85,9 +85,9 @@ impl Pack for MintExtension {
         is_initialized_dst[0] = is_initialized as u8;
         mint_dst.copy_from_slice(mint.as_ref());
         symbol_len_dst[0] = symbol_len;
-        symbol_dst.copy_from_slice(&symbol[1..]);
+        symbol_dst.copy_from_slice(&symbol[0..]);
         name_len_dst[0] = name_len;
-        name_dst.copy_from_slice(&name[1..]);
+        name_dst.copy_from_slice(&name[0..]);
     }
 }
 
