@@ -1,7 +1,7 @@
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
 
-//! a extension for mint, support symbol/name etc for mint with a list file
+//! a extension for mint symbol, support symbol/name etc for mint with a list file
 
 pub mod error;
 pub mod instruction;
