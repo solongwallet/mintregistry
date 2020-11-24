@@ -39,7 +39,7 @@ impl Processor {
     }
 
     /// Processes an [RegisterMint](enum.RegistryInstruction.html) instruction.
-    pub fn process_register_mint(
+    fn process_register_mint(
         accounts: &[AccountInfo],
         mint: Pubkey,
         symbol: String,

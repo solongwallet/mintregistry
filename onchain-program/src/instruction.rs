@@ -6,24 +6,26 @@ use solana_program::{
     program_error::ProgramError,
     //program_option::COption,
     pubkey::Pubkey,
-    info,
     //sysvar,
 };
 //use std::convert::TryInto;
-//use std::mem::size_of;
+use std::mem::size_of;
 use std::str::from_utf8;
 
 /// Instructions supported by the mint-registry program.
 #[repr(C)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum RegistryInstruction {
-    /// Initializes a new mint and optionally deposits all the newly minted
+    /// Register  a new mint extension for a mint
+    /// with a SYMBOL 
+    /// and a NAME
+    /// echo should be a string which length < 16
     RegisterMint {
-        /// mint 
+        /// mint is the address for a mint 
         mint: Pubkey,
-        /// symbol
+        /// symbol is a symbol for a mint
         symbol: String,
-        /// name
+        /// name is a name for amint
         name: String,
     },
 }
@@ -44,11 +46,6 @@ impl RegistryInstruction {
                 let (&len, rest) = rest.split_first().ok_or(InvalidInstruction)?;
                 let (name_buf, _rest) = rest.split_at(len.into());
                 let name = String::from(from_utf8(name_buf).unwrap());
-                info!("mint_registry:mint: ");
-                info!("mint_registry:symbol:");
-                info!(symbol.as_str());
-                info!("mint_registry:name: ");
-                info!(name.as_str());
                 Self::RegisterMint{
                     mint,
                     symbol,
@@ -68,4 +65,26 @@ impl RegistryInstruction {
             Err(RegistryError::InvalidInstruction.into())
         }
     }
+
+    /// Packs a [RegistryInstruction](enum.RegistryInstruction.html) into a byte buffer.
+    pub fn pack(&self) -> Vec<u8> {
+        let mut buf : Vec<u8>;
+        let self_len= size_of::<Self>();
+        match self {
+            &Self::RegisterMint {
+                ref mint,
+                ref symbol,
+                ref name,
+            } => {
+                buf = Vec::with_capacity(self_len+1+1+1);
+                buf.push(1); // tag
+                buf.extend_from_slice(mint.as_ref());
+                buf.push(symbol.len() as u8);
+                buf.extend_from_slice(symbol.as_bytes());
+                buf.push(name.len() as u8);
+                buf.extend_from_slice(name.as_ref());
+            }
+        };
+        buf
+    }    
 }
