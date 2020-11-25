@@ -32,6 +32,14 @@ pub enum RegistryError {
     #[error("Operation overflowed")]
     Overflow,
 
+    /// NoRegistry
+    #[error("Mint Extension has not been registed")]
+    NoRegistry,
+
+    /// AlreadRegistry
+    #[error("Mint Extension has already been registed")]
+    AlreadRegistry,
+
     /// TestError 
     #[error("TestError")]
     TestError,
@@ -59,6 +67,8 @@ impl PrintProgramError for RegistryError {
             RegistryError::NoAuthority => info!("Must have authority to create mint"),
             RegistryError::NoMintAuthority => info!("No mint_authority for mint"),
             RegistryError::Overflow => info!("Operation overflowed"),
+            RegistryError::NoRegistry => info!("Mint Extension has not been registed"),
+            RegistryError::AlreadRegistry => info!("Mint Extension has already been registed"),
             RegistryError::TestError => info!("TestError"),
         }
     }

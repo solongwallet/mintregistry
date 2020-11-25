@@ -31,6 +31,14 @@ pub enum RegistryInstruction {
 
     /// CloseMint delete a Mint extension
     CloseMint ,
+
+    /// Modify to modify an exist Mint extension
+    ModifyMint {
+        /// symbol is a symbol for a mint
+        symbol: String,
+        /// name is a name for amint
+        name: String,
+    }
 }
 
 
@@ -56,6 +64,18 @@ impl RegistryInstruction {
                 }
             },
             2 => Self::CloseMint,
+            3 => {
+                let (&len, rest) = rest.split_first().ok_or(InvalidInstruction)?;
+                let (symbol_buf, rest) = rest.split_at(len.into());
+                let symbol = String::from(from_utf8(symbol_buf).unwrap());
+                let (&len, rest) = rest.split_first().ok_or(InvalidInstruction)?;
+                let (name_buf, _rest) = rest.split_at(len.into());
+                let name = String::from(from_utf8(name_buf).unwrap());
+                Self::ModifyMint{
+                    symbol,
+                    name,
+                }
+            }
             _ => return Err(RegistryError::InvalidInstruction.into()),
         })
     }
@@ -91,6 +111,17 @@ impl RegistryInstruction {
             Self::CloseMint => {
                 buf = Vec::with_capacity(self_len);
                 buf.push(2); //tag
+            }
+            &Self::ModifyMint {
+                ref symbol,
+                ref name,
+            } => {
+                buf = Vec::with_capacity(self_len+1+1+1);
+                buf.push(1); // tag
+                buf.push(symbol.len() as u8);
+                buf.extend_from_slice(symbol.as_bytes());
+                buf.push(name.len() as u8);
+                buf.extend_from_slice(name.as_ref());
             }
         };
         buf

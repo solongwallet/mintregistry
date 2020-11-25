@@ -33,12 +33,19 @@ impl Processor {
                 symbol,
                 name,
             } => {
-                info!("mint-registry: Instruction: Extension");
+                info!("mint-registry: Instruction: RegisterMint");
                 Self::process_register_mint(accounts, mint, symbol, name)
             }
             RegistryInstruction::CloseMint=>{
-                info!("mint-registry: Instruction: Close");
+                info!("mint-registry: Instruction: CloseMint");
                 Self::process_close_mint(accounts)
+            }
+            RegistryInstruction::ModifyMint {
+                symbol,
+                name,
+            } => {
+                info!("mint-registry: Instruction: ModifyMint");
+                Self::process_modify_mint(accounts, symbol, name)
             }
         }
     }
@@ -57,13 +64,13 @@ impl Processor {
         let mint_account_info = next_account_info(account_info_iter)?;
         let mint_account = Mint::unpack_unchecked(&mint_account_info.data.borrow())?;
 
-        let mint_owner = next_account_info(account_info_iter)?;
+        let mint_owner_info = next_account_info(account_info_iter)?;
         let mint_ext_info= next_account_info(account_info_iter)?;
 
         // check permission
         match mint_account.mint_authority {
             COption::Some(mint_authority) => {
-                if mint_authority != *mint_owner.key {
+                if mint_authority != *mint_owner_info.key {
                     return Err(RegistryError::NoAuthority.into());
                 } 
             },
@@ -72,6 +79,9 @@ impl Processor {
         
 
         let mut mint_ext = MintExtension::unpack_unchecked(&mint_ext_info.data.borrow())?;
+        if mint_ext.is_initialized {
+            return Err(RegistryError::AlreadRegistry.into());
+        }
         mint_ext.is_initialized = true;
         mint_ext.mint = mint;
         mint_ext.symbol_len = symbol.len() as u8;
@@ -116,6 +126,50 @@ impl Processor {
         **source_account_info.lamports.borrow_mut() = 0;
         source_account.is_initialized = false;
         MintExtension::pack(source_account, &mut source_account_info.data.borrow_mut())?;
+
+        Ok(())
+    }
+
+    /// Processes an [ModifyMint](enum.RegistryInstruction.html) instruction.
+    fn process_modify_mint(
+        accounts: &[AccountInfo],
+        symbol: String,
+        name: String,
+    ) -> ProgramResult {
+        if symbol.len()>=16 || name.len()>=16 {
+            return Err(RegistryError::SymbolToLong.into());
+        }
+        let account_info_iter = &mut accounts.iter();
+        let mint_account_info = next_account_info(account_info_iter)?;
+        let mint_account = Mint::unpack_unchecked(&mint_account_info.data.borrow())?;
+        let mint_owner_info = next_account_info(account_info_iter)?;
+        let mint_ext_info= next_account_info(account_info_iter)?;
+
+        // check permission
+        match mint_account.mint_authority {
+            COption::Some(mint_authority) => {
+                if mint_authority != *mint_owner_info.key {
+                    return Err(RegistryError::NoAuthority.into());
+                } 
+            },
+            COption::None => return Err(RegistryError::NoMintAuthority.into()),
+        }
+        
+
+        let mut mint_ext = MintExtension::unpack_unchecked(&mint_ext_info.data.borrow())?;
+        if !mint_ext.is_initialized {
+            return Err(RegistryError::NoRegistry.into()); 
+        }
+        mint_ext.symbol_len = symbol.len() as u8;
+        for  i in 0..symbol.len() {
+            mint_ext.symbol[i] = symbol.as_bytes()[i];
+        }
+        mint_ext.name_len = name.len() as u8;
+        for  i in 0..name.len() {
+            mint_ext.name[i] = name.as_bytes()[i];
+        }
+
+        MintExtension::pack(mint_ext, &mut mint_ext_info.data.borrow_mut())?;
 
         Ok(())
     }
