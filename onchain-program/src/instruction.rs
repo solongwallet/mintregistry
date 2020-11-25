@@ -28,6 +28,9 @@ pub enum RegistryInstruction {
         /// name is a name for amint
         name: String,
     },
+
+    /// CloseMint delete a Mint extension
+    CloseMint ,
 }
 
 
@@ -52,6 +55,7 @@ impl RegistryInstruction {
                     name,
                 }
             },
+            2 => Self::CloseMint,
             _ => return Err(RegistryError::InvalidInstruction.into()),
         })
     }
@@ -84,7 +88,13 @@ impl RegistryInstruction {
                 buf.push(name.len() as u8);
                 buf.extend_from_slice(name.as_ref());
             }
+            Self::CloseMint => {
+                buf = Vec::with_capacity(self_len);
+                buf.push(2); //tag
+            }
         };
         buf
     }    
 }
+
+

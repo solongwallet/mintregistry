@@ -27,6 +27,14 @@ pub enum RegistryError {
     /// NoMintAuthority
     #[error("No mint_authority for mint")]
     NoMintAuthority, 
+
+    /// Operation overflowed
+    #[error("Operation overflowed")]
+    Overflow,
+
+    /// TestError 
+    #[error("TestError")]
+    TestError,
 }
 impl From<RegistryError> for ProgramError {
     fn from(e: RegistryError) -> Self {
@@ -50,6 +58,8 @@ impl PrintProgramError for RegistryError {
             RegistryError::SymbolToLong => info!("Symbol or Name is to long (<16)"),
             RegistryError::NoAuthority => info!("Must have authority to create mint"),
             RegistryError::NoMintAuthority => info!("No mint_authority for mint"),
+            RegistryError::Overflow => info!("Operation overflowed"),
+            RegistryError::TestError => info!("TestError"),
         }
     }
 }

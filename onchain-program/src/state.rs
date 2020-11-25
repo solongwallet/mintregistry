@@ -54,7 +54,6 @@ impl Pack for MintExtension {
         let name_len = name_len[0] as u8;
         let symbol = symbol_buf.clone();
         let name = name_buf.clone();
-
         Ok(MintExtension {
             is_initialized,
             mint,

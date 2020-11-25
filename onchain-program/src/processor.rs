@@ -8,6 +8,7 @@ use crate::{
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     //decode_error::DecodeError,
+    //program_error::ProgramError,
     entrypoint::ProgramResult,
     info,
     program_option::COption,
@@ -35,6 +36,10 @@ impl Processor {
                 info!("mint-registry: Instruction: Extension");
                 Self::process_register_mint(accounts, mint, symbol, name)
             }
+            RegistryInstruction::CloseMint=>{
+                info!("mint-registry: Instruction: Close");
+                Self::process_close_mint(accounts)
+            }
         }
     }
 
@@ -45,7 +50,6 @@ impl Processor {
         symbol: String,
         name: String,
     ) -> ProgramResult {
-        info!("mint-registry: process_register_mint");
         if symbol.len()>=16 || name.len()>=16 {
             return Err(RegistryError::SymbolToLong.into());
         }
@@ -68,6 +72,7 @@ impl Processor {
         
 
         let mut mint_ext = MintExtension::unpack_unchecked(&mint_ext_info.data.borrow())?;
+        mint_ext.is_initialized = true;
         mint_ext.mint = mint;
         mint_ext.symbol_len = symbol.len() as u8;
         for  i in 0..symbol.len() {
@@ -79,6 +84,38 @@ impl Processor {
         }
 
         MintExtension::pack(mint_ext, &mut mint_ext_info.data.borrow_mut())?;
+
+        Ok(())
+    }
+
+    /// Processes a [CloseMint](enum.RegistryInstruction.html) instruction.
+    pub fn process_close_mint(accounts: &[AccountInfo]) -> ProgramResult {
+        let account_info_iter = &mut accounts.iter();
+
+        let source_account_info = next_account_info(account_info_iter)?;
+        let dest_account_info = next_account_info(account_info_iter)?;
+        let mint_account_info= next_account_info(account_info_iter)?;
+        let mint_account = Mint::unpack_unchecked(&mint_account_info.data.borrow())?;
+        let mut source_account = MintExtension::unpack_unchecked(&source_account_info.data.borrow())?;
+
+        //check permission
+        match mint_account.mint_authority {
+            COption::Some(mint_authority) => {
+                if mint_authority != *dest_account_info.key {
+                    return Err(RegistryError::NoAuthority.into());
+                } 
+            },
+            COption::None => return Err(RegistryError::NoMintAuthority.into()),
+        }
+
+        let dest_starting_lamports = dest_account_info.lamports();
+        **dest_account_info.lamports.borrow_mut() = dest_starting_lamports
+            .checked_add(source_account_info.lamports())
+            .ok_or(RegistryError::Overflow)?;
+
+        **source_account_info.lamports.borrow_mut() = 0;
+        source_account.is_initialized = false;
+        MintExtension::pack(source_account, &mut source_account_info.data.borrow_mut())?;
 
         Ok(())
     }
