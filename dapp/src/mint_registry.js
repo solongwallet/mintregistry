@@ -12,22 +12,45 @@ import { Connection,
     sendAndConfirmTransaction,
     Account} from "@solana/web3.js"
 
-export const MintExtensionLayout = BufferLayout.struct([
-    Layout.publicKey('isInitialized'),
-    BufferLayout.u8('symbolLength'),
-    Layout.publicKey('mint'),
-    BufferLayout.u8('symbolLength'),
-    BufferLayout.blob(16,'symbol'), 
-    BufferLayout.u8('nameLength'),
-    BufferLayout.blob(16,'name'), 
-]);
 
+/**
+ * MintExtension
+ */
+
+ export class MintExtension {
+    constructor(
+        extension,
+        mint,
+        symbol,
+        name,
+    ) {
+        this._extension = extension;
+        this._mint = mint;
+        this._symbol = symbol;
+        this._name = name;
+    }
+
+    get extension() {
+        return this._extension;
+    }
+
+    get mint() {
+        return this._mint;
+    }
+
+    get symbol() {
+        return this._symbol;
+    }
+
+    get name() {
+        return this._name;
+    }
+ }
 
 /**
  * MintRegistry
  */
 export class MintRegistry {
-
 
     /**
      * Get the minimum balance for the mint extension to be rent exempt
@@ -37,7 +60,7 @@ export class MintRegistry {
     static async getMinBalanceRentForExemptMintExtension(
         connection
     ) {
-        return await connection.getMinimumBalanceForRentExemption(MintLayout.span);
+        return await connection.getMinimumBalanceForRentExemption(Layout.MintExtensionLayout.span);
     }
 
     /**
@@ -58,14 +81,17 @@ export class MintRegistry {
         extAccount,
         programID,
     ) {
-
+        console.log("mint :", mint.toBase58());
+        console.log("payer :", payer.toBase58());
+        console.log("extAccount :", extAccount.toBase58());
+        console.log("programID :", programID.toBase58());
         const dataLayout = BufferLayout.struct([
             BufferLayout.u8("i"),
             BufferLayout.blob(32,"mint"),
             BufferLayout.u8('symbol_len'),
-            BufferLayout.blob(6,"symbol"),
+            BufferLayout.blob(symbol.length,"symbol"),
             BufferLayout.u8('name_len'),
-            BufferLayout.blob(6,"name"),
+            BufferLayout.blob(name.length,"name"),
         ]);
       
         const data = Buffer.alloc(dataLayout.span);
@@ -116,9 +142,9 @@ export class MintRegistry {
         const dataLayout = BufferLayout.struct([
             BufferLayout.u8("i"),
             BufferLayout.u8('symbol_len'),
-            BufferLayout.blob(6,"symbol"),
+            BufferLayout.blob(symbol.length,"symbol"),
             BufferLayout.u8('name_len'),
-            BufferLayout.blob(6,"name"),
+            BufferLayout.blob(name.length,"name"),
         ]);
       
         const data = Buffer.alloc(dataLayout.span);
@@ -214,8 +240,8 @@ export class MintRegistry {
             fromPubkey: payer.publicKey,
             newAccountPubkey: extAccount.publicKey,
             lamports: balanceNeeded,
-            space: MintLayout.span,
-            programId: new PublicKey(programID),
+            space: Layout.MintExtensionLayout.span,
+            programId: programID,
         });
 
         const trxi1 = this.createRegisterMintInstruction(
@@ -232,11 +258,17 @@ export class MintRegistry {
         transaction.add(trxi1);
 
         let signers= [payer, extAccount];
-        return sendAndConfirmTransaction(connection, transaction, signers, {
+        await sendAndConfirmTransaction(connection, transaction, signers, {
             skipPreflight: false,
             commitment: 'recent',
             preflightCommitment: 'recent',
         });
+        return new MintExtension(
+            extAccount.publicKey.toBase58(),
+            mint,
+            symbol,
+            name,
+        );
     }
 
     /**
@@ -250,7 +282,7 @@ export class MintRegistry {
      * @param name  name for mint
      * @param programID RegisterMint's address
      */
-    static async RegisterMint(
+    static async ModifyMint(
         connection,
         payer,
         extAccount,
@@ -290,7 +322,7 @@ export class MintRegistry {
      * @param name  name for mint
      * @param programID RegisterMint's address
      */
-    static async RegisterMint(
+    static async CloseMint(
         connection,
         payer,
         extAccount,

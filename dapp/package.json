@@ -1,10 +1,13 @@
 {
-  "name": "@solong/MintRegistry.js",
-  "version": "1.0.0",
+  "name": "@solong/mintregistry.js",
+  "version": "0.0.2",
   "description": "MintRegistry javascript library",
-  "main": "index.js",
+  "main": "src/index.js",
   "repository": "https://github.com/solongwallet/mintregistry/dapp",
-  "author": "CZ(cz.theng@gmail.com)",
+  "author": "SolongWallet(solongwallet@gmail.com)",
+  "files": [
+    "/src"
+  ],
   "scripts": {
     "build": "cross-env NODE_ENV=production rollup -c",
     "clean": "rm -rf ./coverage ./lib"
