@@ -26,6 +26,7 @@ class Content extends React.Component {
     this.onMint = this.onMint.bind(this);
     this.onSymbol = this.onSymbol.bind(this);
     this.onName = this.onName.bind(this);
+    this.onQuery = this.onQuery.bind(this);
 
     //let url =  'http://api.mainnet-beta.solana.com';
     let url =  'http://150.109.237.56:8899';
@@ -54,6 +55,12 @@ class Content extends React.Component {
         <React.Fragment>
           <p> Mint Extension: {this.state.extAccount} </p>
         </React.Fragment>
+
+        <Divider />
+        <React.Fragment>
+          <TextField multiline label="mint" onChange={this.onMint}/>
+          <Button onClick={this.onQuery}>Query </Button>
+        </React.Fragment>
       </Container>
     );
   }
@@ -67,6 +74,16 @@ class Content extends React.Component {
       this.setState({publicKey: this.account.publicKey.toBase58()}, () => {
         console.log(this.state.publicKey);
       });
+    });
+  }
+
+  onQuery() {
+    MintRegistry.GetMintExtension(
+      this.connection,
+      new PublicKey(this.state.mint),
+      this.programID,
+    ).then((exts)=>{
+      console.log(exts);
     });
   }
 

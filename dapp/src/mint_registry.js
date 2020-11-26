@@ -348,5 +348,40 @@ export class MintRegistry {
             preflightCommitment: 'recent',
         });        
     }
+
+    static async GetMintExtension(
+        connection,
+        mint,
+        programID,
+    ) {
+       
+        let resp = await connection._rpcRequest('getProgramAccounts', [
+            programID.toBase58(),
+            {
+              encoding:'jsonParsed',
+              commitment: 'recent',
+                filters:[{"dataSize": 67},{"memcmp": {"offset": 1, "bytes": mint.toBase58()}}]
+            }
+        ])
+        if (resp.result && resp.result.length > 0 ) {
+            let exts = [];
+            resp.result.forEach( result =>{
+                const account = result.account;
+                const data = account.data[0];
+                const b = Buffer.from(data, 'base64');
+                const p = new PublicKey(b.slice(1,33));
+                let l = b.slice(33,34)[0];
+                const s = b.slice(34,34+l).toString();
+                l = b.slice(50,51)[0];
+                const n = b.slice(51,51+l).toString();
+
+                const ext = new MintExtension(result.pubkey, p.toBase58(),s,n);
+                exts.push(ext);
+            });
+            return exts;
+        } else {
+            return null;
+        }
+    }
 }
   
