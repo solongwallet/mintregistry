@@ -139,6 +139,8 @@ export class MintRegistry {
         extAccount,
         programID,
     ) {
+        console.log("symbol:", symbol);
+        console.log("name:", name);
         const dataLayout = BufferLayout.struct([
             BufferLayout.u8("i"),
             BufferLayout.u8('symbol_len'),
@@ -167,7 +169,7 @@ export class MintRegistry {
 
         const  trxi = new TransactionInstruction({
             keys,
-            programId: new PublicKey(programID),
+            programId: programID,
             data,
         });
         return trxi;
@@ -208,7 +210,7 @@ export class MintRegistry {
 
         const  trxi = new TransactionInstruction({
             keys,
-            programId: new PublicKey(programID),
+            programId: programID,
             data,
         });
         return trxi;
@@ -318,8 +320,6 @@ export class MintRegistry {
      * @param payer Fee payer and mint maker for transaction
      * @param extAccount mint extension account 
      * @param mint the mint 
-     * @param symbol symbol for mint
-     * @param name  name for mint
      * @param programID RegisterMint's address
      */
     static async CloseMint(
@@ -327,8 +327,6 @@ export class MintRegistry {
         payer,
         extAccount,
         mint,
-        symbol,
-        name,
         programID,
     ){
         const trxi0 = this.createCloseMintInstruction(

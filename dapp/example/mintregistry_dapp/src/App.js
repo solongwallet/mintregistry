@@ -16,10 +16,10 @@ class Content extends React.Component {
   constructor(props) {
     super(props)
     this.state = {mnemonic:'degree person wagon table brown decrease tumble major mouse sword crawl advice', 
-                  mint:'3TGzz7sWKbtyzNpwh1anAoo6mEwFGRt8JYLrgNAeJQSG',
+                  mint:'HmyHxsWs3aLyaDLs73kCwK4HnNnre3YpTsFhCU6s5YKS',
                   symbol:'CZCOIN',
                   name:"CZ's Coin",
-                  extAccount:'',
+                  extAccount:'C5NJr68ku7rQHahFSYSduy11A2kTErP63Py5jzmhTFam',
                 };
     this.onImport = this.onImport.bind(this);
     this.onRegister = this.onRegister.bind(this);
@@ -27,11 +27,14 @@ class Content extends React.Component {
     this.onSymbol = this.onSymbol.bind(this);
     this.onName = this.onName.bind(this);
     this.onQuery = this.onQuery.bind(this);
+    this.onModify = this.onModify.bind(this);
+    this.onClose = this.onClose.bind(this);
 
     //let url =  'http://api.mainnet-beta.solana.com';
-    let url =  'http://150.109.237.56:8899';
+    //let url =  'http://150.109.237.56:8899';
+    let url =  'https://devnet.solana.com';
     this.connection = new Connection(url);
-    this.programID = new PublicKey('BFnCttWPPjKvtny554kDoV6Br1QHVP2A2BrpdodQJAxu')
+    this.programID = new PublicKey('9qvktaJE5MFwuXs52b3N6ueGKCw5qQRiLpzbAFZ8C4BG')
   }
 
 
@@ -55,11 +58,22 @@ class Content extends React.Component {
         <React.Fragment>
           <p> Mint Extension: {this.state.extAccount} </p>
         </React.Fragment>
-
         <Divider />
         <React.Fragment>
           <TextField multiline label="mint" onChange={this.onMint}/>
           <Button onClick={this.onQuery}>Query </Button>
+        </React.Fragment>
+        <Divider />
+        <React.Fragment>
+          <TextField multiline label="mint" onChange={this.onMint}/>
+          <TextField multiline label="symbol" onChange={this.onSymbol}/>
+          <TextField multiline label="name" onChange={this.onName}/>
+          <Button onClick={this.onModify}> Modify</Button>
+        </React.Fragment>
+        <Divider />
+        <React.Fragment>
+          <TextField multiline label="mint" onChange={this.onMint}/>
+          <Button onClick={this.onClose}> Close</Button>
         </React.Fragment>
       </Container>
     );
@@ -74,6 +88,36 @@ class Content extends React.Component {
       this.setState({publicKey: this.account.publicKey.toBase58()}, () => {
         console.log(this.state.publicKey);
       });
+    });
+  }
+
+  onModify() {
+    MintRegistry.ModifyMint(
+      this.connection,
+      this.account,
+      new PublicKey(this.state.extAccount),
+      new PublicKey(this.state.mint),
+      this.state.symbol,
+      this.state.name,
+      this.programID,
+    ).then(()=>{
+      console.log("done modify");
+    }).catch((e)=>{
+      console.log("modify error:", e);
+    });
+  }
+
+  onClose() {
+    MintRegistry.CloseMint(
+      this.connection,
+      this.account,
+      new PublicKey(this.state.extAccount),
+      new PublicKey(this.state.mint),
+      this.programID,
+    ).then(()=>{
+      console.log("done close");
+    }).catch((e)=>{
+      console.log("close error:", e)
     });
   }
 
