@@ -29,6 +29,7 @@ class Content extends React.Component {
     this.onQuery = this.onQuery.bind(this);
     this.onModify = this.onModify.bind(this);
     this.onClose = this.onClose.bind(this);
+    this.onQueryBySymbol = this.onQueryBySymbol.bind(this);
 
     //let url =  'http://api.mainnet-beta.solana.com';
     //let url =  'http://150.109.237.56:8899';
@@ -75,6 +76,11 @@ class Content extends React.Component {
           <TextField multiline label="mint" onChange={this.onMint}/>
           <Button onClick={this.onClose}> Close</Button>
         </React.Fragment>
+        <Divider />
+        <React.Fragment>
+          <TextField multiline label="symbol" onChange={this.onSymbol}/>
+          <Button onClick={this.onQueryBySymbol}>QueryBySymbol </Button>
+        </React.Fragment>
       </Container>
     );
   }
@@ -90,6 +96,7 @@ class Content extends React.Component {
       });
     });
   }
+
 
   onModify() {
     MintRegistry.ModifyMint(
@@ -129,6 +136,17 @@ class Content extends React.Component {
     ).then((exts)=>{
       console.log(exts);
     });
+  }
+
+  onQueryBySymbol() {
+    MintRegistry.GetMintExtensionBySymbol(
+      this.connection,
+      this.state.symbol,
+      this.programID,
+    ).then((exts)=>{
+      console.log(exts);
+    })
+
   }
 
   onRegister() {
