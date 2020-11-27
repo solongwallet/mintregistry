@@ -8,7 +8,7 @@ use crate::{
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     //decode_error::DecodeError,
-    //program_error::ProgramError,
+    program_error::ProgramError,
     entrypoint::ProgramResult,
     info,
     program_option::COption,
@@ -68,6 +68,9 @@ impl Processor {
         let mint_ext_info= next_account_info(account_info_iter)?;
 
         // check permission
+        if !mint_owner_info.is_signer || !mint_ext_info.is_signer{
+            return Err(ProgramError::MissingRequiredSignature);
+        }
         match mint_account.mint_authority {
             COption::Some(mint_authority) => {
                 if mint_authority != *mint_owner_info.key {
@@ -109,6 +112,9 @@ impl Processor {
         let mut source_account = MintExtension::unpack_unchecked(&source_account_info.data.borrow())?;
 
         //check permission
+        if !dest_account_info.is_signer {
+            return Err(ProgramError::MissingRequiredSignature);
+        }
         match mint_account.mint_authority {
             COption::Some(mint_authority) => {
                 if mint_authority != *dest_account_info.key {
@@ -146,6 +152,9 @@ impl Processor {
         let mint_ext_info= next_account_info(account_info_iter)?;
 
         // check permission
+        if !mint_owner_info.is_signer {
+            return Err(ProgramError::MissingRequiredSignature);
+        }
         match mint_account.mint_authority {
             COption::Some(mint_authority) => {
                 if mint_authority != *mint_owner_info.key {
