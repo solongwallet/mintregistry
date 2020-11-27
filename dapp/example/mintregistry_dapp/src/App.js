@@ -19,7 +19,7 @@ class Content extends React.Component {
                   mint:'HmyHxsWs3aLyaDLs73kCwK4HnNnre3YpTsFhCU6s5YKS',
                   symbol:'CZCOIN',
                   name:"CZ's Coin",
-                  extAccount:'C5NJr68ku7rQHahFSYSduy11A2kTErP63Py5jzmhTFam',
+                  extAccount:'DTYQTMMQLzeuRnGqosoALkotQZsd8Xg7Xg7Rgsxfawbc',
                 };
     this.onImport = this.onImport.bind(this);
     this.onRegister = this.onRegister.bind(this);
