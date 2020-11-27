@@ -1,6 +1,6 @@
 {
   "name": "@solong/mintregistry.js",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "MintRegistry javascript library",
   "main": "src/index.js",
   "repository": "https://github.com/solongwallet/mintregistry/dapp",

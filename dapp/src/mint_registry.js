@@ -347,6 +347,13 @@ export class MintRegistry {
         });        
     }
 
+    /**
+     * Get extension for Mint.
+     *
+     * @param connection The connection to use
+     * @param mint the mint 
+     * @param programID RegisterMint's address
+     */
     static async GetMintExtension(
         connection,
         mint,
@@ -383,13 +390,18 @@ export class MintRegistry {
         }
     }
 
-
+    /**
+     * Get extension for Mint with SYMBOL.
+     *
+     * @param connection The connection to use
+     * @param symbol symbol for the mint 
+     * @param programID RegisterMint's address
+     */
     static async GetMintExtensionBySymbol(
         connection,
         symbol,
         programID,
     ) {
-        console.log("symbol:", symbol)
         const symbolBuf = Buffer.from(symbol)
         const filter = bs58.encode(symbolBuf)
         let resp = await connection._rpcRequest('getProgramAccounts', [
@@ -400,7 +412,6 @@ export class MintRegistry {
                 filters:[{"dataSize": 67},{"memcmp": {"offset": 34, "bytes": filter}}]
             }
         ])
-        console.log("resp:", resp);
         if (resp.result && resp.result.length > 0 ) {
             let exts = [];
             resp.result.forEach( result =>{
