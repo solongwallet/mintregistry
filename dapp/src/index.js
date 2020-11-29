@@ -1,3 +1,3 @@
 // @flow
-export {MintRegistry} from './mint_registry';
+export {MintRegistry, MintExtension} from './mint_registry';
 export {MintExtensionLayout} from './layout';
