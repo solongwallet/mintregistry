@@ -135,7 +135,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_instruction_pack_unpack() {
+    fn test_instruction_register_mint() {
         let check = RegistryInstruction::RegisterMint{
             mint: Pubkey::new(&[1u8;32]),
             symbol: String::from(""),
@@ -166,6 +166,50 @@ mod test {
         expect.extend_from_slice(symbol.as_bytes());
         expect.extend_from_slice(&[name.len() as u8]);
         expect.extend_from_slice(name.as_bytes());
+        assert_eq!(packed, expect);
+        let unpacked = RegistryInstruction::unpack(&expect).unwrap();
+        assert_eq!(unpacked, check); 
+    }
+
+    #[test]
+    fn test_instruction_modify_mint() {
+        let check = RegistryInstruction::ModifyMint{
+            symbol: String::from(""),
+            name: String::from(""),
+        };
+        let packed = check.pack();
+        let mut expect = Vec::new();
+        expect.extend_from_slice(&[3]);
+        expect.extend_from_slice(&[0]);
+        expect.extend_from_slice(&[0]);
+        assert_eq!(packed, expect);
+        let unpacked = RegistryInstruction::unpack(&expect).unwrap();
+        assert_eq!(unpacked, check); 
+
+        let check = RegistryInstruction::ModifyMint{
+            symbol: String::from("CZCOIN"),
+            name: String::from("CZ's COIN"),
+        };
+        let packed = check.pack();
+        let mut expect = Vec::new();
+        expect.extend_from_slice(&[3]);
+        let symbol = String::from("CZCOIN");
+        let name= String::from("CZ's COIN");
+        expect.extend_from_slice(&[symbol.len() as u8]);
+        expect.extend_from_slice(symbol.as_bytes());
+        expect.extend_from_slice(&[name.len() as u8]);
+        expect.extend_from_slice(name.as_bytes());
+        assert_eq!(packed, expect);
+        let unpacked = RegistryInstruction::unpack(&expect).unwrap();
+        assert_eq!(unpacked, check); 
+    }
+
+    #[test]
+    fn test_instruction_close_mint() {
+        let check = RegistryInstruction::CloseMint;
+        let packed = check.pack();
+        let mut expect = Vec::new();
+        expect.extend_from_slice(&[2]);
         assert_eq!(packed, expect);
         let unpacked = RegistryInstruction::unpack(&expect).unwrap();
         assert_eq!(unpacked, check); 
