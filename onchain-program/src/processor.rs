@@ -184,3 +184,9 @@ impl Processor {
     }
  
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+}
