@@ -2,10 +2,11 @@
 
 use crate::error::RegistryError;
 use solana_program::{
-    //instruction::{AccountMeta, Instruction},
+    instruction::{AccountMeta, Instruction},
     program_error::ProgramError,
     //program_option::COption,
     pubkey::Pubkey,
+    info,
     //sysvar,
 };
 //use std::convert::TryInto;
@@ -128,7 +129,37 @@ impl RegistryInstruction {
     }    
 }
 
+/// register_mint_instruction create a RegisterMint instruction
+pub fn register_mint_instruction(
+    program_id: &Pubkey,
+    mint_key: &Pubkey,
+    symbol: String,
+    name: String,
+    payer_key: &Pubkey,
+    mintext_key: &Pubkey,
+    signer_pubkeys: &[&Pubkey],
+) -> Result<Instruction, ProgramError> {
+    info!("register_mint_instruction");
+    let data = RegistryInstruction::RegisterMint { 
+        mint:*mint_key,
+        symbol,
+        name,
+     }.pack();
 
+    let mut accounts = Vec::with_capacity(3 + signer_pubkeys.len());
+    accounts.push(AccountMeta::new(*mint_key, false));
+    accounts.push(AccountMeta::new(*payer_key, true));
+    accounts.push(AccountMeta::new(*mintext_key, true));
+    for signer_pubkey in signer_pubkeys.iter() {
+        accounts.push(AccountMeta::new_readonly(**signer_pubkey, true));
+    }
+
+    Ok(Instruction {
+        program_id: *program_id,
+        accounts,
+        data,
+    })
+}
 
 #[cfg(test)]
 mod test {
