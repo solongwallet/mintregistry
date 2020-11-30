@@ -161,6 +161,63 @@ pub fn register_mint_instruction(
     })
 }
 
+/// modify_mint_instruction modify a RegisterMint instruction
+pub fn modify_mint_instruction(
+    program_id: &Pubkey,
+    mint_key: &Pubkey,
+    symbol: String,
+    name: String,
+    payer_key: &Pubkey,
+    mintext_key: &Pubkey,
+    signer_pubkeys: &[&Pubkey],
+) -> Result<Instruction, ProgramError> {
+    info!("modify_mint_instruction");
+    let data = RegistryInstruction::ModifyMint { 
+        symbol,
+        name,
+     }.pack();
+
+    let mut accounts = Vec::with_capacity(3 + signer_pubkeys.len());
+    accounts.push(AccountMeta::new(*mint_key, false));
+    accounts.push(AccountMeta::new(*payer_key, true));
+    accounts.push(AccountMeta::new(*mintext_key, true));
+    for signer_pubkey in signer_pubkeys.iter() {
+        accounts.push(AccountMeta::new_readonly(**signer_pubkey, true));
+    }
+
+    Ok(Instruction {
+        program_id: *program_id,
+        accounts,
+        data,
+    })
+}
+
+/// close_mint_instruction modify a RegisterMint instruction
+pub fn close_mint_instruction(
+    program_id: &Pubkey,
+    mint_key: &Pubkey,
+    payer_key: &Pubkey,
+    mintext_key: &Pubkey,
+    signer_pubkeys: &[&Pubkey],
+) -> Result<Instruction, ProgramError> {
+    info!("close_mint_instruction");
+    let data = RegistryInstruction::CloseMint.pack();
+
+    let mut accounts = Vec::with_capacity(3 + signer_pubkeys.len());
+    accounts.push(AccountMeta::new(*mintext_key, true));
+    accounts.push(AccountMeta::new(*payer_key, true));
+    accounts.push(AccountMeta::new(*mint_key, false));
+    for signer_pubkey in signer_pubkeys.iter() {
+        accounts.push(AccountMeta::new_readonly(**signer_pubkey, true));
+    }
+
+    Ok(Instruction {
+        program_id: *program_id,
+        accounts,
+        data,
+    })
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
