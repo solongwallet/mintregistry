@@ -67,6 +67,61 @@ payer为mint币的“mint_authority”,同时也是铸币消耗SOL的账号，�
 
 
 ## 3. 查询
+@solong/mintregistry.js 提供了两种查询接口，分别是：
+
+    /**
+     * Get extension for Mint.
+     *
+     * @param connection The connection to use
+     * @param mint the mint 
+     * @param programID RegisterMint's address
+     */
+    static async GetMintExtension(
+        connection,
+        mint,
+        programID,
+    )
+
+传入要查询的SPL的mint地址，查询这个SPL币的信息。以及：
+
+    /**
+     * Get extension for Mint with SYMBOL.
+     *
+     * @param connection The connection to use
+     * @param symbol symbol for the mint 
+     * @param programID RegisterMint's address
+     */
+    static async GetMintExtensionBySymbol(
+        connection,
+        symbol,
+        programID,
+    )
+传入SPL的symbol信息，查询对应的SPL币的信息。
+
+其中connection都是[solana-web3.js](https://github.com/solana-labs/solana-web3.js)
+的Connection对象，mint和programID是其PublicKey对象，symbol是一个字符串。
+
+返回对象为
+
+    export class MintExtension {
+        constructor(
+            extension,
+            mint,
+            symbol,
+            name,
+        ) {
+            this._extension = extension;
+            this._mint = mint;
+            this._symbol = symbol;
+            this._name = name;
+        }
+    }
+的数组，其中每个元素记录了
+
+* 这个扩展对应的账号地址： extension 
+* SPL币的地址：mint
+* SPL币记录的symbol
+* SPL币记录的name
 
 ## 4. 修改
 修改时，需要使用@solong/mintregistry.js中的MintRegistry提供的：
