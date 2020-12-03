@@ -16,6 +16,7 @@ use solana_program::{
     program_pack::{Pack},
     pubkey::Pubkey,
     //sysvar::{rent::Rent, Sysvar},
+    //sysvar::{rent::Rent},
 };
 
 /// Program state handler.
@@ -57,12 +58,15 @@ impl Processor {
         symbol: String,
         name: String,
     ) -> ProgramResult {
+        info!("process_register_mint");
         if symbol.len()>=16 || name.len()>=16 {
             return Err(RegistryError::SymbolToLong.into());
         }
         let account_info_iter = &mut accounts.iter();
         let mint_account_info = next_account_info(account_info_iter)?;
+        info!("mint_account_info");
         let mint_account = Mint::unpack_unchecked(&mint_account_info.data.borrow())?;
+        info!("mint_account");
 
         let mint_owner_info = next_account_info(account_info_iter)?;
         let mint_ext_info= next_account_info(account_info_iter)?;
@@ -188,5 +192,193 @@ impl Processor {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use crate::instruction::*;
+    //use solana_program::{clock::Epoch, instruction::Instruction, sysvar::rent};
+    use solana_program::{instruction::Instruction, sysvar::{rent::Rent}};
+    use solana_sdk::account::{
+        //create_account, create_is_signer_account_infos, Account,
+        create_is_signer_account_infos, Account,
+    };
+
+    fn do_process_instruction(
+        instruction: Instruction,
+        accounts: Vec<&mut Account>,
+    ) -> ProgramResult {
+        let mut meta = instruction
+            .accounts
+            .iter()
+            .zip(accounts)
+            .map(|(account_meta, account)| (&account_meta.pubkey, account_meta.is_signer, account))
+            .collect::<Vec<_>>();
+
+        let account_infos = create_is_signer_account_infos(&mut meta);
+        Processor::process(&instruction.program_id, &account_infos, &instruction.data)
+    }
+
+    // fn do_process_instruction_dups(
+    //     instruction: Instruction,
+    //     account_infos: Vec<AccountInfo>,
+    // ) -> ProgramResult {
+    //     Processor::process(&instruction.program_id, &account_infos, &instruction.data)
+    // }
+
+    fn mintext_minimum_balance() -> u64 {
+        Rent::default().minimum_balance(MintExtension::get_packed_len())
+    }
+
+    fn mint_minimum_balance() -> u64 {
+        Rent::default().minimum_balance(Mint::get_packed_len())
+    }
+
+    #[test]
+    fn test_register_mint() {
+        let program_id = Pubkey::new_unique();
+        let symbol = String::from("SYM");
+        let name = String::from("name of mint");
+        let pay_key = Pubkey::new_unique();
+        let mut pay_account = Account::default();
+
+        let mint_key = Pubkey::new_unique();
+        let mint_account_state = Mint {
+            mint_authority: COption::Some(pay_key),
+            supply: 0,
+            decimals:6,
+            is_initialized: true,
+            freeze_authority: COption::None,
+        };
+        let mut data:[u8;82] = [0;82];
+        mint_account_state.pack_into_slice(&mut data);
+        let mut mint_account= Account::new(mint_minimum_balance(), Mint::get_packed_len(), &program_id);
+        mint_account.data = data.to_vec();
+
+        let mint_ext_key = Pubkey::new_unique();
+        let mut mint_ext_account= Account::new(mintext_minimum_balance(), MintExtension::get_packed_len(), &program_id);
+
+
+
+        do_process_instruction(
+            register_mint_instruction(
+                &program_id,
+                &mint_key, 
+                symbol, 
+                name,
+                &pay_key,
+                &mint_ext_key,
+                &[],
+            ).unwrap(),
+            vec![&mut mint_account, &mut pay_account,&mut mint_ext_account],
+        ).unwrap();
+
+        let mint_ext = MintExtension::unpack_unchecked(&mint_ext_account.data).unwrap();
+        assert_eq!(mint_ext.symbol_len, 3);
+        assert_eq!(mint_ext.symbol[0..3], *("SYM".as_bytes()));
+        assert_eq!(mint_ext.name[0..(mint_ext.name_len as usize)], *("name of mint".as_bytes()));
+    }
+
+    #[test]
+    fn test_modify_mint() {
+        let program_id = Pubkey::new_unique();
+        let symbol = String::from("SYM2");
+        let name = String::from("name of mint");
+        let pay_key = Pubkey::new_unique();
+        let mut pay_account = Account::default();
+
+        let mint_key = Pubkey::new_unique();
+        let mint_account_state = Mint {
+            mint_authority: COption::Some(pay_key),
+            supply: 0,
+            decimals:6,
+            is_initialized: true,
+            freeze_authority: COption::None,
+        };
+        let mut data:[u8;82] = [0;82];
+        mint_account_state.pack_into_slice(&mut data);
+        let mut mint_account= Account::new(mint_minimum_balance(), Mint::get_packed_len(), &program_id);
+        mint_account.data = data.to_vec();
+
+        let mint_ext_key = Pubkey::new_unique();
+        let mint_ext_state = MintExtension {
+            is_initialized: true,
+            mint: mint_key,
+            symbol_len:3,
+            symbol:[0;16],
+            name_len:3,
+            name:[0;16],
+        };
+        let mut data:[u8;67] = [0;67];
+        mint_ext_state.pack_into_slice(&mut data);
+        let mut mint_ext_account= Account::new(mintext_minimum_balance(), MintExtension::get_packed_len(), &program_id);
+        mint_ext_account.data = data.to_vec();
+
+
+
+        do_process_instruction(
+            modify_mint_instruction(
+                &program_id,
+                &mint_key, 
+                symbol, 
+                name,
+                &pay_key,
+                &mint_ext_key,
+                &[],
+            ).unwrap(),
+            vec![&mut mint_account, &mut pay_account,&mut mint_ext_account],
+        ).unwrap();
+
+        let mint_ext = MintExtension::unpack_unchecked(&mint_ext_account.data).unwrap();
+        assert_eq!(mint_ext.symbol_len, 4);
+        assert_eq!(mint_ext.symbol[0..4], *("SYM2".as_bytes()));
+        assert_eq!(mint_ext.name[0..(mint_ext.name_len as usize)], *("name of mint".as_bytes()));
+    }
+
+    #[test]
+    fn test_close_mint() {
+        let program_id = Pubkey::new_unique();
+        let pay_key = Pubkey::new_unique();
+        let mut pay_account = Account::default();
+
+        let mint_key = Pubkey::new_unique();
+        let mint_account_state = Mint {
+            mint_authority: COption::Some(pay_key),
+            supply: 0,
+            decimals:6,
+            is_initialized: true,
+            freeze_authority: COption::None,
+        };
+        let mut data:[u8;82] = [0;82];
+        mint_account_state.pack_into_slice(&mut data);
+        let mut mint_account= Account::new(mint_minimum_balance(), Mint::get_packed_len(), &program_id);
+        mint_account.data = data.to_vec();
+
+        let mint_ext_key = Pubkey::new_unique();
+        let mint_ext_state = MintExtension {
+            is_initialized: true,
+            mint: mint_key,
+            symbol_len:3,
+            symbol:[0;16],
+            name_len:3,
+            name:[0;16],
+        };
+        let mut data:[u8;67] = [0;67];
+        mint_ext_state.pack_into_slice(&mut data);
+        let mut mint_ext_account= Account::new(mintext_minimum_balance(), MintExtension::get_packed_len(), &program_id);
+        mint_ext_account.data = data.to_vec();
+
+
+
+        do_process_instruction(
+            close_mint_instruction(
+                &program_id,
+                &mint_key, 
+                &pay_key,
+                &mint_ext_key,
+                &[],
+            ).unwrap(),
+            vec![&mut mint_ext_account, &mut pay_account,&mut mint_account],
+        ).unwrap();
+        assert_eq!(mint_ext_account.lamports, 0);
+    }
+
 
 }
