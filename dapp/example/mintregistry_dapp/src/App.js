@@ -9,17 +9,17 @@ import {mnemonicToSecretKey} from './utils'
 
 import { LAMPORTS_PER_SOL,Account, PublicKey, Connection, SystemProgram ,Transaction,sendAndConfirmTransaction} from '@solana/web3.js';
 import { Button,Grid } from '@material-ui/core';
-import { MintRegistry } from './MintRegistry.js';
+import { MintRegistry,ProgramID } from './MintRegistry.js';
 
 class Content extends React.Component {
 
   constructor(props) {
     super(props)
-    this.state = {mnemonic:'degree person wagon table brown decrease tumble major mouse sword crawl advice', 
-                  mint:'HmyHxsWs3aLyaDLs73kCwK4HnNnre3YpTsFhCU6s5YKS',
-                  symbol:'CZCOIN',
-                  name:"CZ's Coin",
-                  extAccount:'DTYQTMMQLzeuRnGqosoALkotQZsd8Xg7Xg7Rgsxfawbc',
+    this.state = {mnemonic:'', 
+                  mint:'',
+                  symbol:'',
+                  name:"",
+                  extAccount:'',
                 };
     this.onImport = this.onImport.bind(this);
     this.onRegister = this.onRegister.bind(this);
@@ -31,11 +31,11 @@ class Content extends React.Component {
     this.onClose = this.onClose.bind(this);
     this.onQueryBySymbol = this.onQueryBySymbol.bind(this);
 
-    //let url =  'http://api.mainnet-beta.solana.com';
+    let url =  'http://api.mainnet-beta.solana.com';
     //let url =  'http://150.109.237.56:8899';
-    let url =  'https://devnet.solana.com';
+    //let url =  'https://devnet.solana.com';
     this.connection = new Connection(url);
-    this.programID = new PublicKey('9qvktaJE5MFwuXs52b3N6ueGKCw5qQRiLpzbAFZ8C4BG')
+    this.programID = new PublicKey(ProgramID);
   }
 
 
