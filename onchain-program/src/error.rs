@@ -5,6 +5,7 @@ use num_derive::FromPrimitive;
 use solana_program::{decode_error::DecodeError, 
     program_error::ProgramError,
     info,
+    msg,
     program_error::PrintProgramError};
 use thiserror::Error;
 use num_traits::FromPrimitive;
@@ -62,14 +63,14 @@ impl PrintProgramError for RegistryError {
         E: 'static + std::error::Error + DecodeError<E> + PrintProgramError + FromPrimitive,
     {
         match self {
-            RegistryError::InvalidInstruction => info!("Invalid instruction"),
-            RegistryError::SymbolToLong => info!("Symbol or Name is to long (<16)"),
-            RegistryError::NoAuthority => info!("Must have authority to create mint"),
-            RegistryError::NoMintAuthority => info!("No mint_authority for mint"),
-            RegistryError::Overflow => info!("Operation overflowed"),
-            RegistryError::NoRegistry => info!("Mint Extension has not been registed"),
-            RegistryError::AlreadRegistry => info!("Mint Extension has already been registed"),
-            RegistryError::TestError => info!("TestError"),
+            RegistryError::InvalidInstruction => msg!("Invalid instruction"),
+            RegistryError::SymbolToLong => msg!("Symbol or Name is to long (<16)"),
+            RegistryError::NoAuthority => msg!("Must have authority to create mint"),
+            RegistryError::NoMintAuthority => msg!("No mint_authority for mint"),
+            RegistryError::Overflow => msg!("Operation overflowed"),
+            RegistryError::NoRegistry => msg!("Mint Extension has not been registed"),
+            RegistryError::AlreadRegistry => msg!("Mint Extension has already been registed"),
+            RegistryError::TestError => msg!("TestError"),
         }
     }
 }

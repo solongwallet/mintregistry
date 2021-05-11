@@ -12,6 +12,7 @@ use solana_program::{
 //use std::convert::TryInto;
 use std::mem::size_of;
 use std::str::from_utf8;
+use std::convert::TryInto;
 
 /// Instructions supported by the mint-registry program.
 #[repr(C)]
@@ -22,6 +23,14 @@ pub enum RegistryInstruction {
     /// and a NAME
     /// echo should be a string which length < 16
     RegisterMint {
+        /// mint_authority
+        mint_authority: Pubkey,
+        /// freeze_authority
+        freeze_authority: Pubkey,
+        /// supply
+        supply: u64,
+        /// decimals
+        decimals: u8,
         /// mint is the address for a mint 
         mint: Pubkey,
         /// symbol is a symbol for a mint
@@ -51,6 +60,10 @@ impl RegistryInstruction {
         let (&tag, rest) = input.split_first().ok_or(InvalidInstruction)?;
         Ok(match tag { //RegisterMint
             1 => {
+                let (mint_authority, rest) = Self::unpack_pubkey(rest)?;
+                let (freeze_authority, rest) = Self::unpack_pubkey(rest)?;
+                let (supply, rest) = Self::unpack_u64(rest)?;
+                let (&decimals, rest) = rest.split_first().ok_or(InvalidInstruction)?; 
                 let (mint, rest) = Self::unpack_pubkey(rest)?;
                 let (&len, rest) = rest.split_first().ok_or(InvalidInstruction)?;
                 let (symbol_buf, rest) = rest.split_at(len.into());
@@ -59,6 +72,10 @@ impl RegistryInstruction {
                 let (name_buf, _rest) = rest.split_at(len.into());
                 let name = String::from(from_utf8(name_buf).unwrap());
                 Self::RegisterMint{
+                    mint_authority,
+                    freeze_authority,
+                    supply,
+                    decimals,
                     mint,
                     symbol,
                     name,
@@ -91,18 +108,40 @@ impl RegistryInstruction {
         }
     }
 
+    fn unpack_u64(input: &[u8]) -> Result<(u64, &[u8]), ProgramError> {
+        if input.len() >= 8 {
+            let (amount, rest) = input.split_at(8);
+            let amount = amount
+                .get(..8)
+                .and_then(|slice| slice.try_into().ok())
+                .map(u64::from_le_bytes)
+                .ok_or(RegistryError::InvalidInstruction)?;
+            Ok((amount, rest))
+        } else {
+            Err(RegistryError::InvalidInstruction.into())
+        }
+    }
+
     /// Packs a [RegistryInstruction](enum.RegistryInstruction.html) into a byte buffer.
     pub fn pack(&self) -> Vec<u8> {
         let mut buf : Vec<u8>;
         let self_len= size_of::<Self>();
         match self {
             &Self::RegisterMint {
+                ref mint_authority,
+                ref freeze_authority,
+                ref supply,
+                ref decimals,
                 ref mint,
                 ref symbol,
                 ref name,
             } => {
                 buf = Vec::with_capacity(self_len+1+1+1);
                 buf.push(1); // tag
+                buf.extend_from_slice(mint_authority.as_ref());
+                buf.extend_from_slice(freeze_authority.as_ref());
+                buf.extend_from_slice(&supply.to_le_bytes());
+                buf.push(*decimals);
                 buf.extend_from_slice(mint.as_ref());
                 buf.push(symbol.len() as u8);
                 buf.extend_from_slice(symbol.as_bytes());
@@ -132,6 +171,10 @@ impl RegistryInstruction {
 /// register_mint_instruction create a RegisterMint instruction
 pub fn register_mint_instruction(
     program_id: &Pubkey,
+    mint_authority_key: &Pubkey,
+    freeze_authority_key: &Pubkey,
+    supply: u64,
+    decimals: u8,
     mint_key: &Pubkey,
     symbol: String,
     name: String,
@@ -141,6 +184,10 @@ pub fn register_mint_instruction(
 ) -> Result<Instruction, ProgramError> {
     info!("register_mint_instruction");
     let data = RegistryInstruction::RegisterMint { 
+        mint_authority: *mint_authority_key,
+        freeze_authority: *freeze_authority_key,
+        supply:supply,
+        decimals:decimals,
         mint:*mint_key,
         symbol,
         name,

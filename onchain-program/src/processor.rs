@@ -30,12 +30,16 @@ impl Processor {
 
         match instruction {
             RegistryInstruction::RegisterMint {
+                mint_authority,
+                freeze_authority,
+                supply,
+                decimals,
                 mint,
                 symbol,
                 name,
             } => {
                 info!("mint-registry: Instruction: RegisterMint");
-                Self::process_register_mint(accounts, mint, symbol, name)
+                Self::process_register_mint(accounts, mint, symbol, name, mint_authority, freeze_authority, supply, decimals)
             }
             RegistryInstruction::CloseMint=>{
                 info!("mint-registry: Instruction: CloseMint");
@@ -57,6 +61,10 @@ impl Processor {
         mint: Pubkey,
         symbol: String,
         name: String,
+        mint_authority: Pubkey,
+        freeze_authority: Pubkey,
+        supply: u64,
+        decimals: u8,
     ) -> ProgramResult {
         info!("process_register_mint");
         if symbol.len()>=16 || name.len()>=16 {
@@ -89,6 +97,10 @@ impl Processor {
         if mint_ext.is_initialized {
             return Err(RegistryError::AlreadRegistry.into());
         }
+        mint_ext.mint_authority = mint_authority;
+        mint_ext.freeze_authority = freeze_authority;
+        mint_ext.supply = supply;
+        mint_ext.decimals = decimals;
         mint_ext.is_initialized = true;
         mint_ext.mint = mint;
         mint_ext.symbol_len = symbol.len() as u8;
@@ -240,6 +252,8 @@ mod tests {
         let mut pay_account = Account::default();
 
         let mint_key = Pubkey::new_unique();
+        let mint_authority_key = Pubkey::new_unique();
+        let freeze_authority_key = Pubkey::new_unique();
         let mint_account_state = Mint {
             mint_authority: COption::Some(pay_key),
             supply: 0,
@@ -260,6 +274,10 @@ mod tests {
         do_process_instruction(
             register_mint_instruction(
                 &program_id,
+                &mint_authority_key,
+                &freeze_authority_key,
+                1000000000u64,
+                6u8,
                 &mint_key, 
                 symbol, 
                 name,

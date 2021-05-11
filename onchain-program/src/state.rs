@@ -19,6 +19,14 @@ pub const MAX_SYMBOL_NAME_LEN: usize = 32;
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct MintExtension {
+    /// mint_authority
+    pub mint_authority: Pubkey,
+    /// freeze_authority
+    pub freeze_authority: Pubkey,
+    /// supply
+    pub supply: u64,
+    /// decimals
+    pub decimals: u8,
     /// is_initialized
     pub is_initialized: bool,
     /// mint
@@ -39,22 +47,39 @@ impl IsInitialized for MintExtension {
     } 
 }
 impl Pack for MintExtension {
-    const LEN: usize = 67;
+    const LEN: usize = 140;
     fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
-        let src = array_ref![src, 0, 67];
-        let (is_initialized, mint, symbol_len,symbol_buf, name_len, name_buf) =
-            array_refs![src, 1, 32, 1, 16, 1, 16];
+        let src = array_ref![src, 0, 140];
+        let (mint_authority, 
+            freeze_authority, 
+            supply_buf, 
+            decimals_buf, 
+            is_initialized, 
+            mint, 
+            symbol_len,
+            symbol_buf, 
+            name_len, 
+            name_buf) =
+            array_refs![src, 32, 32, 8, 1, 1, 32, 1, 16, 1, 16];
         let is_initialized = match is_initialized {
             [0] => false,
             [1] => true,
             _ => return Err(ProgramError::InvalidAccountData),
         };
+        let mint_authority = Pubkey::new_from_array(*mint_authority);
+        let freeze_authority = Pubkey::new_from_array(*freeze_authority);
+        let supply = u64::from_le_bytes(*supply_buf);
+        let decimals = decimals_buf[0] as u8;
         let mint = Pubkey::new_from_array(*mint);
         let symbol_len = symbol_len[0] as u8;
         let name_len = name_len[0] as u8;
         let symbol = symbol_buf.clone();
         let name = name_buf.clone();
         Ok(MintExtension {
+            mint_authority, 
+            freeze_authority, 
+            supply, 
+            decimals, 
             is_initialized,
             mint,
             symbol_len,
@@ -64,16 +89,24 @@ impl Pack for MintExtension {
         })
     }
     fn pack_into_slice(&self, dst: &mut [u8]) {
-        let dst = array_mut_ref![dst, 0, 67];
+        let dst = array_mut_ref![dst, 0, 140];
         let (
+            mint_authority_dst, 
+            freeze_authority_dst, 
+            supply_dst, 
+            decimals_dst, 
             is_initialized_dst,
             mint_dst,
             symbol_len_dst,
             symbol_dst,
             name_len_dst,
             name_dst,
-        ) = mut_array_refs![dst, 1, 32, 1, 16, 1, 16];
+        ) = mut_array_refs![dst, 32, 32, 8, 1, 1, 32, 1, 16, 1, 16];
         let &MintExtension {
+            mint_authority, 
+            freeze_authority, 
+            supply, 
+            decimals, 
             is_initialized,
             ref mint,
             symbol_len,
@@ -81,6 +114,10 @@ impl Pack for MintExtension {
             name_len,
             ref name,
         } = self;
+        mint_authority_dst.copy_from_slice(mint_authority.as_ref());
+        freeze_authority_dst.copy_from_slice(freeze_authority.as_ref());
+        supply_dst.copy_from_slice(&supply.to_le_bytes());
+        decimals_dst[0] = decimals;
         is_initialized_dst[0] = is_initialized as u8;
         mint_dst.copy_from_slice(mint.as_ref());
         symbol_len_dst[0] = symbol_len;
