@@ -66,15 +66,12 @@ impl Processor {
         supply: u64,
         decimals: u8,
     ) -> ProgramResult {
-        info!("process_register_mint");
         if symbol.len()>=16 || name.len()>=16 {
             return Err(RegistryError::SymbolToLong.into());
         }
         let account_info_iter = &mut accounts.iter();
         let mint_account_info = next_account_info(account_info_iter)?;
-        info!("mint_account_info");
         let mint_account = Mint::unpack_unchecked(&mint_account_info.data.borrow())?;
-        info!("mint_account");
 
         let mint_owner_info = next_account_info(account_info_iter)?;
         let mint_ext_info= next_account_info(account_info_iter)?;
