@@ -20,6 +20,10 @@ class Content extends React.Component {
                   symbol:'',
                   name:"",
                   extAccount:'',
+                  decimals:0,
+                  supply:0,
+                  mint_authority:"",
+                  freeze_authority:"",
                 };
     this.onImport = this.onImport.bind(this);
     this.onRegister = this.onRegister.bind(this);
@@ -30,10 +34,14 @@ class Content extends React.Component {
     this.onModify = this.onModify.bind(this);
     this.onClose = this.onClose.bind(this);
     this.onQueryBySymbol = this.onQueryBySymbol.bind(this);
+    this.onMintAuthority = this.onMintAuthority.bind(this);
+    this.onFreezeAuthority = this.onFreezeAuthority.bind(this);
+    this.onSupply = this.onSupply.bind(this);
+    this.onDecimals = this.onDecimals.bind(this);
 
-    let url =  'http://api.mainnet-beta.solana.com';
+    //let url =  'http://api.mainnet-beta.solana.com';
     //let url =  'http://150.109.237.56:8899';
-    //let url =  'https://devnet.solana.com';
+    let url =  'https://devnet.solana.com';
     this.connection = new Connection(url);
     this.programID = new PublicKey(ProgramID);
   }
@@ -51,6 +59,10 @@ class Content extends React.Component {
         </React.Fragment>
         <Divider />
         <React.Fragment>
+        <TextField multiline label="mint_authority" onChange={this.onMintAuthority}/>
+        <TextField multiline label="freeze_authority" onChange={this.onFreezeAuthority}/>
+        <TextField multiline label="supply" onChange={this.onSupply}/>
+        <TextField multiline label="decimals" onChange={this.onDecimals}/>
           <TextField multiline label="mint" onChange={this.onMint}/>
           <TextField multiline label="symbol" onChange={this.onSymbol}/>
           <TextField multiline label="name" onChange={this.onName}/>
@@ -153,6 +165,10 @@ class Content extends React.Component {
     MintRegistry.RegisterMint(
       this.connection,
       this.account,
+      new PublicKey(this.state.mintAuthority),
+      new PublicKey(this.state.freezeAuthority),
+      this.state.supply,
+      this.state.decimals,
       new PublicKey(this.state.mint),
       this.state.symbol,
       this.state.name,
@@ -160,6 +176,22 @@ class Content extends React.Component {
     ).then((ext)=>{
       this.setState({extAccount:ext.extension})
     });
+  }
+
+  onSupply(e) {
+    this.setState({supply:e.target.value}); 
+  }
+
+  onMintAuthority(e) {
+    this.setState({mintAuthority:e.target.value}); 
+  }
+
+  onFreezeAuthority(e) {
+    this.setState({freezeAuthority:e.target.value}); 
+  }
+
+  onDecimals(e) {
+    this.setState({decimals:e.target.value}); 
   }
 
   onMint(e) {

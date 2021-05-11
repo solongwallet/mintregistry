@@ -17,14 +17,28 @@ import bs58 from 'bs58';
  * MintExtension
  */
 
+ export function intFromBytes(byteArr) {
+    let ret = 0;
+    byteArr.forEach((val, i) => { ret += val * 256 ** i; });
+    return ret;
+}
+
  export class MintExtension {
     constructor(
         extension,
+        mint_authority,
+        freeze_authority,
+        supply,
+        decimals,
         mint,
         symbol,
         name,
     ) {
         this._extension = extension;
+        this._mint_authority = mint_authority;
+        this._freeze_authority = freeze_authority;
+        this._supply = supply;
+        this._decimals = decimals;
         this._mint = mint;
         this._symbol = symbol;
         this._name = name;
@@ -32,6 +46,22 @@ import bs58 from 'bs58';
 
     get extension() {
         return this._extension;
+    }
+
+    get mint_authority() {
+        return this._mint_authority;
+    }
+
+    get freeze_authority() {
+        return this._freeze_authority;
+    }
+
+    get supply() {
+        return this._supply;
+    }
+
+    get decimals() {
+        return this._decimals;
     }
 
     get mint() {
@@ -74,6 +104,10 @@ export class MintRegistry {
      * @param programID SPL Token program account
      */
     static createRegisterMintInstruction(
+        mint_authority,
+        freeze_authority,
+        supply,
+        decimals,
         mint,
         symbol,
         name,
@@ -87,6 +121,10 @@ export class MintRegistry {
         console.log("programID :", programID.toBase58());
         const dataLayout = BufferLayout.struct([
             BufferLayout.u8("i"),
+            BufferLayout.blob(32,"mint_authority"),
+            BufferLayout.blob(32,"freeze_authority"),
+            Layout.uint64(8,"supply"),
+            BufferLayout.u8("decimals"),
             BufferLayout.blob(32,"mint"),
             BufferLayout.u8('symbol_len'),
             BufferLayout.blob(symbol.length,"symbol"),
@@ -98,6 +136,10 @@ export class MintRegistry {
         dataLayout.encode(
             {
               i:1, // register mint instruction
+              mint_authority:mint_authority.toBuffer(),
+              freeze_authority:freeze_authority.toBuffer(),
+              supply:new u64(supply).toBuffer(),
+              decimals: decimals,
               mint: mint.toBuffer(), 
               symbol_len:symbol.length,
               symbol:Buffer.from(symbol, 'utf8'),
@@ -230,6 +272,10 @@ export class MintRegistry {
     static async RegisterMint(
         connection,
         payer,
+        mint_authority,
+        freeze_authority,
+        supply,
+        decimals,
         mint,
         symbol,
         name,
@@ -247,6 +293,10 @@ export class MintRegistry {
         });
 
         const trxi1 = this.createRegisterMintInstruction(
+            mint_authority,
+            freeze_authority,
+            supply,
+            decimals,
             mint,
             symbol,
             name,
@@ -365,7 +415,7 @@ export class MintRegistry {
             {
               encoding:'jsonParsed',
               commitment: 'recent',
-                filters:[{"dataSize": 67},{"memcmp": {"offset": 1, "bytes": mint.toBase58()}}]
+                filters:[{"dataSize": 140},{"memcmp": {"offset": 1+73, "bytes": mint.toBase58()}}]
             }
         ])
         console.log("resp:", resp);
@@ -375,13 +425,19 @@ export class MintRegistry {
                 const account = result.account;
                 const data = account.data[0];
                 const b = Buffer.from(data, 'base64');
-                const p = new PublicKey(b.slice(1,33));
-                let l = b.slice(33,34)[0];
-                const s = b.slice(34,34+l).toString();
-                l = b.slice(50,51)[0];
-                const n = b.slice(51,51+l).toString();
 
-                const ext = new MintExtension(result.pubkey, p.toBase58(),s,n);
+                const ma = new PublicKey(b.slice(1,33));
+                const fa = new PublicKey(b.slice(33,65));
+                const supply = intFromBytes(b.slice(65,73));
+                const decimals = b.slice(73,74)[0];
+
+                const p = new PublicKey(b.slice(74,106));
+                let l = b.slice(106,107)[0];
+                const s = b.slice(107,107+l).toString();
+                l = b.slice(123,124)[0];
+                const n = b.slice(124,124+l).toString();
+
+                const ext = new MintExtension(result.pubkey, ma, fa, supply, decimals, p.toBase58(),s,n);
                 exts.push(ext);
             });
             return exts;
@@ -409,7 +465,7 @@ export class MintRegistry {
             {
               encoding:'jsonParsed',
               commitment: 'recent',
-                filters:[{"dataSize": 67},{"memcmp": {"offset": 34, "bytes": filter}}]
+                filters:[{"dataSize": 140},{"memcmp": {"offset": 34+73, "bytes": filter}}]
             }
         ])
         if (resp.result && resp.result.length > 0 ) {
@@ -418,13 +474,21 @@ export class MintRegistry {
                 const account = result.account;
                 const data = account.data[0];
                 const b = Buffer.from(data, 'base64');
-                const p = new PublicKey(b.slice(1,33));
-                let l = b.slice(33,34)[0];
-                const s = b.slice(34,34+l).toString();
-                l = b.slice(50,51)[0];
-                const n = b.slice(51,51+l).toString();
 
-                const ext = new MintExtension(result.pubkey, p.toBase58(),s,n);
+
+                const ma = new PublicKey(b.slice(1,33));
+                const fa = new PublicKey(b.slice(33,65));
+                const supply = intFromBytes(b.slice(65,73));
+                const decimals = b.slice(73,74)[0];
+
+                const p = new PublicKey(b.slice(74,106));
+                let l = b.slice(106,107)[0];
+                const s = b.slice(107,107+l).toString();
+                l = b.slice(123,124)[0];
+                const n = b.slice(124,124+l).toString();
+
+                const ext = new MintExtension(result.pubkey, ma, fa, supply, decimals, p.toBase58(),s,n);
+
                 exts.push(ext);
             });
             return exts;
