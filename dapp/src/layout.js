@@ -12,7 +12,7 @@ export function publicKey(property) {
 /**
  * Layout for a 64bit unsigned value
  */
- export const uint64 = (property: string = 'uint64'): Object => {
+ export function uint64(property){
     return BufferLayout.blob(8, property);
 };
   

@@ -15,15 +15,15 @@ class Content extends React.Component {
 
   constructor(props) {
     super(props)
-    this.state = {mnemonic:'', 
-                  mint:'',
-                  symbol:'',
-                  name:"",
+    this.state = {mnemonic:'degree person wagon table brown decrease tumble major mouse sword crawl advice', 
+                  mint:'FUzuWzeZuWyhiHkBQzt59SmRzoeLwyrqyfkd5L6QLF9u',
+                  symbol:'SRM',
+                  name:"SRM",
                   extAccount:'',
-                  decimals:0,
-                  supply:0,
-                  mint_authority:"",
-                  freeze_authority:"",
+                  decimals:6,
+                  supply:100000000,
+                  mintAuthority:"HSfwVfB7RUF1SKCd4yrz8KZp7TU262Y5BeZZN1tdCTVk",
+                  freezeAuthority:"HSfwVfB7RUF1SKCd4yrz8KZp7TU262Y5BeZZN1tdCTVk",
                 };
     this.onImport = this.onImport.bind(this);
     this.onRegister = this.onRegister.bind(this);
@@ -38,12 +38,13 @@ class Content extends React.Component {
     this.onFreezeAuthority = this.onFreezeAuthority.bind(this);
     this.onSupply = this.onSupply.bind(this);
     this.onDecimals = this.onDecimals.bind(this);
+    this.onMnemonic = this.onMnemonic.bind(this);
 
     //let url =  'http://api.mainnet-beta.solana.com';
     //let url =  'http://150.109.237.56:8899';
     let url =  'https://devnet.solana.com';
     this.connection = new Connection(url);
-    this.programID = new PublicKey(ProgramID);
+    this.programID = new PublicKey("4pqbBJvuAf3Kguq2rUipT2QQAVLM5HEJepc8AHpF5yi6");
   }
 
 
@@ -151,9 +152,9 @@ class Content extends React.Component {
   }
 
   onQueryBySymbol() {
-    MintRegistry.GetMintExtensionBySymbol(
+    MintRegistry.GetMintExtensionByMintAuthority(
       this.connection,
-      this.state.symbol,
+      new PublicKey("HSfwVfB7RUF1SKCd4yrz8KZp7TU262Y5BeZZN1tdCTVk"),
       this.programID,
     ).then((exts)=>{
       console.log(exts);
@@ -162,6 +163,7 @@ class Content extends React.Component {
   }
 
   onRegister() {
+    console.log("this.state.mintAuthority:",this.state.mintAuthority)
     MintRegistry.RegisterMint(
       this.connection,
       this.account,
@@ -179,7 +181,7 @@ class Content extends React.Component {
   }
 
   onSupply(e) {
-    this.setState({supply:e.target.value}); 
+    this.setState({supply:parseInt(e.target.value)}); 
   }
 
   onMintAuthority(e) {
@@ -191,7 +193,7 @@ class Content extends React.Component {
   }
 
   onDecimals(e) {
-    this.setState({decimals:e.target.value}); 
+    this.setState({decimals:parseInt(e.target.value)}); 
   }
 
   onMint(e) {

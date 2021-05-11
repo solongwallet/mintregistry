@@ -12,6 +12,8 @@ import { Connection,
     sendAndConfirmTransaction,
     Account} from "@solana/web3.js"
 import bs58 from 'bs58';
+import {u64} from '@solana/spl-token'
+import {OldMints} from './mintext_snapshot'
 
 /**
  * MintExtension
@@ -123,7 +125,7 @@ export class MintRegistry {
             BufferLayout.u8("i"),
             BufferLayout.blob(32,"mint_authority"),
             BufferLayout.blob(32,"freeze_authority"),
-            Layout.uint64(8,"supply"),
+            BufferLayout.blob(8,"supply"),
             BufferLayout.u8("decimals"),
             BufferLayout.blob(32,"mint"),
             BufferLayout.u8('symbol_len'),
@@ -133,12 +135,14 @@ export class MintRegistry {
         ]);
       
         const data = Buffer.alloc(dataLayout.span);
+        const supplyBuffer = Buffer.alloc(8);
+        supplyBuffer.set(new u64(supply).toBuffer(),0);
         dataLayout.encode(
             {
               i:1, // register mint instruction
               mint_authority:mint_authority.toBuffer(),
               freeze_authority:freeze_authority.toBuffer(),
-              supply:new u64(supply).toBuffer(),
+              supply:supplyBuffer,
               decimals: decimals,
               mint: mint.toBuffer(), 
               symbol_len:symbol.length,
@@ -304,6 +308,8 @@ export class MintRegistry {
             extAccount.publicKey,
             programID,
         );
+        console.log("mint_authority:", mint_authority.toBase58())
+        console.log("supply:", supply)
 
         const transaction = new Transaction();
         transaction.add(trxi0);
@@ -418,18 +424,16 @@ export class MintRegistry {
                 filters:[{"dataSize": 140},{"memcmp": {"offset": 1+73, "bytes": mint.toBase58()}}]
             }
         ])
-        console.log("resp:", resp);
         if (resp.result && resp.result.length > 0 ) {
             let exts = [];
             resp.result.forEach( result =>{
                 const account = result.account;
                 const data = account.data[0];
                 const b = Buffer.from(data, 'base64');
-
-                const ma = new PublicKey(b.slice(1,33));
-                const fa = new PublicKey(b.slice(33,65));
-                const supply = intFromBytes(b.slice(65,73));
-                const decimals = b.slice(73,74)[0];
+                const ma = new PublicKey(b.slice(0,32));
+                const fa = new PublicKey(b.slice(32,64));
+                const supply = intFromBytes(b.slice(64,72));
+                const decimals = b.slice(72,73)[0];
 
                 const p = new PublicKey(b.slice(74,106));
                 let l = b.slice(106,107)[0];
@@ -437,7 +441,7 @@ export class MintRegistry {
                 l = b.slice(123,124)[0];
                 const n = b.slice(124,124+l).toString();
 
-                const ext = new MintExtension(result.pubkey, ma, fa, supply, decimals, p.toBase58(),s,n);
+                const ext = new MintExtension(result.pubkey, ma.toBase58(), fa.toBase58(), supply, decimals, p.toBase58(),s,n);
                 exts.push(ext);
             });
             return exts;
@@ -475,11 +479,10 @@ export class MintRegistry {
                 const data = account.data[0];
                 const b = Buffer.from(data, 'base64');
 
-
-                const ma = new PublicKey(b.slice(1,33));
-                const fa = new PublicKey(b.slice(33,65));
-                const supply = intFromBytes(b.slice(65,73));
-                const decimals = b.slice(73,74)[0];
+                const ma = new PublicKey(b.slice(0,32));
+                const fa = new PublicKey(b.slice(32,64));
+                const supply = intFromBytes(b.slice(64,72));
+                const decimals = b.slice(72,73)[0];
 
                 const p = new PublicKey(b.slice(74,106));
                 let l = b.slice(106,107)[0];
@@ -487,10 +490,65 @@ export class MintRegistry {
                 l = b.slice(123,124)[0];
                 const n = b.slice(124,124+l).toString();
 
-                const ext = new MintExtension(result.pubkey, ma, fa, supply, decimals, p.toBase58(),s,n);
-
+                const ext = new MintExtension(result.pubkey, ma.toBase58(), fa.toBase58(), supply, decimals, p.toBase58(),s,n);
                 exts.push(ext);
             });
+            return exts;
+        } else {
+            return null;
+        }
+    }
+
+
+    /**
+     * Get extension for Mint with mint authority.
+     *
+     * @param connection The connection to use
+     * @param mintAuthority mintAuthoritysymbol for the mint 
+     * @param programID RegisterMint's address
+     */
+     static async GetMintExtensionByMintAuthority(
+        connection,
+        mintAuthority,
+        programID,
+    ) {
+        let resp = await connection._rpcRequest('getProgramAccounts', [
+            programID.toBase58(),
+            {
+              encoding:'jsonParsed',
+              commitment: 'recent',
+                filters:[{"dataSize": 140},{"memcmp": {"offset": 0, "bytes": mintAuthority.toBase58()}}]
+            }
+        ])
+        if (resp.result && resp.result.length > 0 ) {
+            let exts = [];
+            resp.result.forEach( result =>{
+                const account = result.account;
+                const data = account.data[0];
+                const b = Buffer.from(data, 'base64');
+
+                const ma = new PublicKey(b.slice(0,32));
+                const fa = new PublicKey(b.slice(32,64));
+                const supply = intFromBytes(b.slice(64,72));
+                const decimals = b.slice(72,73)[0];
+
+                const p = new PublicKey(b.slice(74,106));
+                let l = b.slice(106,107)[0];
+                const s = b.slice(107,107+l).toString();
+                l = b.slice(123,124)[0];
+                const n = b.slice(124,124+l).toString();
+
+                const ext = new MintExtension(result.pubkey, ma.toBase58(), fa.toBase58(), supply, decimals, p.toBase58(),s,n);
+                exts.push(ext);
+            });
+
+            OldMints.forEach(m =>{
+                if (m.mintAuthority == mintAuthority.toBase58()) {
+                    const ext = new MintExtension("",m.mintAuthority, m.freezeAuthority,0,m.decimals,m.mint,m.symbol, m.name);
+                    exts.push(ext);
+                }
+            })
+
             return exts;
         } else {
             return null;
